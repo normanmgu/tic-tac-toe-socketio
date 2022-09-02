@@ -1,0 +1,101 @@
+<link rel="stylesheet" href="/css/game.css">
+
+<body>
+    
+    <div class="container">
+        <div class="title">
+            <h1>Tic Tac Toe</h1>
+            <div class="room"></div>
+        </div>
+
+        <table>
+        <tr>
+            <td id="0"></td>
+            <td id="1" class="vert"></td>
+            <td id="2"></td>
+        </tr>
+        <tr>
+            <td id="3" class="hori"></td>
+            <td id="4" class="vert hori"></td>
+            <td id="5" class="hori"></td>
+        </tr>
+        <tr>
+            <td id="6"></td>
+            <td id="7" class="vert"></td>
+            <td id="8"></td>
+        </tr>
+        </table>
+    </div>
+    <p><a href="/">Exit</a></p>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.11.0/qs.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>    
+        let isTwoPlayers;
+
+        // GET USERNAME FROM URL
+        const { username, room } = Qs.parse(location.search, {
+            ignoreQueryPrefix: true
+        });
+
+        const socket = io();
+        socket.emit("joinRoom", { username, room }); 
+        socket.on("clientCount", (clients) =>{
+            console.log(clients);
+
+            if(clients.length > 2) {
+                console.log("YOU WILL BE REDIRECTED");
+            }
+            else if(clients.length === 2) {
+                socket.emit("twoPlayers", true);
+            }
+        })
+
+        let player1 = null;
+        let player2 = null;
+
+        socket.on("message", (msg) =>{
+            console.log(msg);
+        })
+
+        socket.on("place", (chip) =>{
+            try {
+                if(isTwoPlayers) {
+                    if(board[chip.location].innerHTML === "") {
+                        board[chip.location].innerHTML = chip.player;
+                    }
+                    else {
+                        throw Error("Slot is already taken");
+                    }
+                }
+                else {
+                    throw Error("Invalid number of players");
+                }
+            }
+            catch(e) {
+                console.log(e);
+            }
+        })
+
+
+        // Get board and append on click functionality
+        const board = [];
+        for(let i = 0; i < 9; i++){
+
+            board.push(document.getElementById(i));
+
+            board[i].addEventListener("click", (event) =>{
+                event.preventDefault();
+                clickSlotController("X", i);
+            })
+        }
+        
+        function clickSlotController(player, location) {
+            let chip = {
+                player: player, 
+                location: location
+            }
+           socket.emit("placeChip", chip ) ;
+        }
+
+    </script>
+</body>
